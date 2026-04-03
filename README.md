@@ -1,6 +1,10 @@
-# Tanmatsu template app project
+# Tanmatsu project for testing new demoscene stuff (faster graphics etc)
 
-This template project shows how to build an app for Tanmatsu using the [PAX graphics](https://github.com/robotman2412/pax-graphics/tree/release/1.1.1/docs) library.
+It is based on the [Template app](https://github.com/Nicolai-Electronics/tanmatsu-template) and the [Ballz demo](https://github.com/cavac/tanmatsu-ballz)
+
+This isn't a demo itself, but will test stuff to make better, cooler demos ;-)
+
+For more information visit the [documentation website](https://docs.tanmatsu.cloud).
 
 For more information visit the [documentation website](https://docs.tanmatsu.cloud).
 
@@ -8,4 +12,3 @@ For more information visit the [documentation website](https://docs.tanmatsu.clo
 
 The contents of this repository may be considered in the public domain or [CC0-1.0](https://creativecommons.org/publicdomain/zero/1.0) licensed at your disposal.
 
-At Nicolai Electronics we love open source so we recommend licensing your work based on this template under terms of the [MIT license](https://opensource.org/license/mit). The MIT license allows others to build upon your work without restrictions while also making sure you retain your attribution.
