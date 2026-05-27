@@ -8,6 +8,7 @@
 #include "bsp/led.h"
 #include "bsp/power.h"
 #include "bsp/audio.h"
+#include "gl_input.h"
 #include "driver/gpio.h"
 #include "driver/i2s_std.h"
 #include "esp_lcd_panel_ops.h"
@@ -59,8 +60,8 @@ typedef struct {
 // Global variables
 static size_t                       display_h_res        = 0;
 static size_t                       display_v_res        = 0;
-static lcd_color_rgb_pixel_format_t display_color_format = LCD_COLOR_PIXEL_FORMAT_RGB888;
-static lcd_rgb_data_endian_t        display_data_endian  = LCD_RGB_DATA_ENDIAN_LITTLE;
+static bsp_display_color_format_t   display_color_format = BSP_DISPLAY_COLOR_FORMAT_24_888RGB;
+static bsp_display_endianness_t     display_data_endian  = BSP_DISPLAY_ENDIAN_LITTLE;
 static pax_buf_t                    fb                   = {0};
 static pax_buf_t                    logo_buf             = {0};  // Logo image buffer
 static QueueHandle_t                input_event_queue    = NULL;
@@ -432,15 +433,15 @@ void app_main(void) {
     sprintf(debugwidth, "WIDTH: %d", display_h_res);
     sprintf(debugheight, "HEIGHT: %d", display_v_res);
 
-    // Convert ESP-IDF color format into PAX buffer type
+    // Convert BSP color format into PAX buffer type
     pax_buf_type_t format = PAX_BUF_24_888RGB;
     sprintf(debugcolor, "Mode RGB888");
     switch (display_color_format) {
-        case LCD_COLOR_PIXEL_FORMAT_RGB565:
+        case BSP_DISPLAY_COLOR_FORMAT_16_565RGB:
             format = PAX_BUF_16_565RGB;
             sprintf(debugcolor, "Mode RGB565");
             break;
-        case LCD_COLOR_PIXEL_FORMAT_RGB888:
+        case BSP_DISPLAY_COLOR_FORMAT_24_888RGB:
             format = PAX_BUF_24_888RGB;
             sprintf(debugcolor, "Mode RGB888");
             break;
@@ -476,7 +477,7 @@ void app_main(void) {
     format = PAX_BUF_2_PAL;
 #endif
     pax_buf_init(&fb, NULL, display_h_res, display_v_res, format);
-    pax_buf_reversed(&fb, display_data_endian == LCD_RGB_DATA_ENDIAN_BIG);
+    pax_buf_reversed(&fb, display_data_endian == BSP_DISPLAY_ENDIAN_BIG);
 #if defined(CONFIG_BSP_TARGET_KAMI)
     // Temporary addition for supporting epaper devices (irrelevant for Tanmatsu)
     fb.palette      = palette;
@@ -497,8 +498,8 @@ void app_main(void) {
 #define RED   0xFFFF0000
 #endif
 
-    // Get input event queue from BSP
-    ESP_ERROR_CHECK(bsp_input_get_queue(&input_event_queue));
+    // Get input event queue from graceloader (merges native + USB keyboard)
+    ESP_ERROR_CHECK(gl_input_get_queue(&input_event_queue));
 
     // Main section of the app - Musical Keyboard
 
