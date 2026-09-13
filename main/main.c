@@ -23,6 +23,7 @@
 #include "keyboard_waveform.h"
 #include "keyboard_notes.h"
 #include "logo_image.h"
+#include "app_volume.h"
 
 //#define CAVAC_DEBUG
 
@@ -71,7 +72,6 @@ static i2s_chan_handle_t i2s_handle = NULL;
 static active_note_t active_notes[MAX_ACTIVE_NOTES];
 static bool note_keys_pressed[NUM_NOTES] = {false};  // Track which keys are currently pressed
 static float current_normalization = 1.0f;  // Smoothed normalization factor
-static uint8_t audio_volume = 100;  // Current volume (0-100%)
 
 #if defined(CONFIG_BSP_TARGET_KAMI)
 // Temporary addition for supporting epaper devices (irrelevant for Tanmatsu)
@@ -360,7 +360,7 @@ void render_volume_indicator(pax_buf_t* fb, int width, int height) {
     // Calculate filled height based on volume (0-100%)
     // Account for borders (2 pixels: top and bottom)
     int max_fill_height = bar_height - 2;
-    int filled_height = (max_fill_height * audio_volume) / 100;
+    int filled_height = (max_fill_height * app_volume_get()) / 100;
 
     // Draw filled dark green bar from bottom up, staying inside the white border
     if (filled_height > 0) {
@@ -394,8 +394,7 @@ void app_main(void) {
     // Initialize audio subsystem
     bsp_audio_initialize(SAMPLE_RATE);
     bsp_audio_get_i2s_handle(&i2s_handle);
-    bsp_audio_set_amplifier(true);   // Enable amplifier
-    bsp_audio_set_volume(audio_volume);  // Set initial volume (100%)
+    app_volume_init();               // Amplifier and volume from the global settings
 
     // Initialize active notes array
     memset(active_notes, 0, sizeof(active_notes));
@@ -520,6 +519,13 @@ void app_main(void) {
         // Process input events
         while (xQueueReceive(input_event_queue, &event, 0) == pdTRUE) {
             input_received = true;
+
+            // Volume keys (stored in the global settings) and audio jack
+            if (app_volume_handle_event(&event)) {
+                screen_needs_update = true;  // Update screen to show new volume
+                continue;
+            }
+
             if (event.type == INPUT_EVENT_TYPE_SCANCODE) {
                 uint32_t scancode = event.args_scancode.scancode;
 
@@ -529,31 +535,6 @@ void app_main(void) {
                 // Check if ESC key (0x01) is pressed
                 if (key == 0x01 && is_key_press(scancode)) {
                     bsp_device_restart_to_launcher();
-                }
-
-                // Check for volume keys (only on key press)
-                if (is_key_press(scancode)) {
-                    bool volume_changed = false;
-
-                    // Volume down (dedicated volume down key)
-                    if (scancode == 0xE02E) {
-                        if (audio_volume >= 10) {
-                            audio_volume -= 10;
-                            volume_changed = true;
-                        }
-                    }
-                    // Volume up (dedicated volume up key)
-                    else if (scancode == 0xE030) {
-                        if (audio_volume <= 90) {
-                            audio_volume += 10;
-                            volume_changed = true;
-                        }
-                    }
-
-                    if (volume_changed) {
-                        bsp_audio_set_volume(audio_volume);
-                        screen_needs_update = true;  // Update screen to show new volume
-                    }
                 }
 
                 int note_idx = find_note_by_scancode(scancode);
